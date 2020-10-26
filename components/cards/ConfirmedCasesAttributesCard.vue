@@ -87,73 +87,78 @@ export default {
 
       return this.$t(value)
     },
+    sortBy(list, iteratee) {
+      return list.map((value, index) => {
+        return {
+          value,
+          index,
+          criteria: iteratee(value, index, list),
+        }
+      }).sort((left, right) => {
+        if (left.criteria === right.criteria) {
+          return left.index - right.index
+        } else if (left.criteria > right.criteria) {
+          return 1
+        } else {
+          return -1
+        }
+      }).map(({ value }) =>{
+        return value
+      })
+    },
     customSort(items, index, isDesc) {
+      const label = index[0]
       const lt10 = this.$t('10歳未満').toString()
-      const lt100 = this.$t('100歳以上').toString()
+      const gt99 = this.$t('100歳以上').toString()
       const unknown = this.$t('不明').toString()
       const investigating = this.$t('調査中').toString()
-      items.sort((a, b) => {
-        // 両者が等しい場合は 0 を返す
-        if (a[index[0]] === b[index[0]]) {
-          return 0
+      this.sortBy(items, (row, index) => {
+        let value = row[label]
+        let criteria = value
+
+        if (label === '整理番号') {
+          criteria = Number(criteria)
+        } else if (label === '公表日') {
+          criteria = Number(new Date(`2020/${criteria}`))
+        }
+        //} else if (label === '居住地') {
+        } else if (label === '年代') {
+          if (row[label] === lt10) {
+            criteria = '00'
+          } else if (row[label] === gt99) {
+            criteria = '99'
+          }
+        }
+        //} else if (label === '性別') {
+        //} else if (label === '濃厚接触者') {
         }
 
-        let comparison = 0
-
-        // '10歳未満' < '10代' ... '90代' < '100歳以上' となるようにソートする
-        // 「10歳未満」同士を比較する場合、と「100歳以上」同士を比較する場合、更にそうでない場合に場合分け
-        if (
-          index[0] === '年代' &&
-          (a[index[0]] === lt10 || b[index[0]] === lt10)
-        ) {
-          comparison = a[index[0]] === lt10 ? -1 : 1
-        } else if (
-          index[0] === '年代' &&
-          (a[index[0]] === lt100 || b[index[0]] === lt100)
-        ) {
-          comparison = a[index[0]] === lt100 ? 1 : -1
-        } else if (index[0] === '整理番号') {
-          comparison = Number(a[index[0]]) < Number(b[index[0]]) ? -1 : 1
-        } else {
-          comparison = String(a[index[0]]) < String(b[index[0]]) ? -1 : 1
+        if (value === investigating && typeof criteria === 'number') {
+          criteria = Number.MAX_SAFE_INTEGER - 1
+        } else if (value === unknown && typeof criteria === 'number') {
+          criteria = Number.MAX_SAFE_INTEGER
         }
-
-        // 公表日のソートを正しくする
-        if (index[0] === '公表日') {
-          // 2/29と3/1が正しくソートできないため、以下は使えない。
-          // 公表日に年まで含む場合は以下が使用可能になり、逆に今使用しているコードが使用不可能となる。
-          // comparison = new Date(a[index[0]]) < new Date(b[index[0]]) ? -1 : 1
-
-          const aDate = a[index[0]].split('/').map((d) => {
-            return parseInt(d)
-          })
-          const bDate = b[index[0]].split('/').map((d) => {
-            return parseInt(d)
-          })
-          comparison = aDate[1] > bDate[1] ? 1 : -1
-          if (aDate[0] > bDate[0]) {
-            comparison = 1
-          } else if (aDate[0] < bDate[0]) {
-            comparison = -1
+        if (typeof criteria === 'number') {
+          if (value === investigating) {
+            criteria = Number.MAX_SAFE_INTEGER - 1
+          } else if (criteria === unknown) {
+            criteria = Number.MAX_SAFE_INTEGER
+          }
+        } else if (typeof criteria === 'string') {
+          if (value === investigating) {
+            criteria = `1${criteria}`
+          } else if (value === unknown) {
+            criteria = `2${criteria}`
+          } else {
+            criteria = `0${criteria}`
           }
         }
 
-        // 「調査中」は年代に限らず、居住地にも存在するので、年代ソートの外に置いている。
-        // 内容としては、「不明」の次に高い(大きい)ものとして扱う。
-        // 日本語の場合、「調査中」は「不明」より低い(小さい)ものとして扱われるが、
-        // 他言語の場合はそうではないため、ここで統一している。
-        if (a[index[0]] === investigating || b[index[0]] === investigating) {
-          comparison = a[index[0]] === investigating ? 1 : -1
-        }
-
-        // 「不明」は年代に限らず、性別にも存在するので、年代ソートの外に置いている。
-        // 内容としては一番高い(大きい)ものとして扱う。
-        if (a[index[0]] === unknown || b[index[0]] === unknown) {
-          comparison = a[index[0]] === unknown ? 1 : -1
-        }
-
-        return isDesc[0] ? comparison * -1 : comparison
+        return criteria
       })
+      if (isDesc[0]) {
+        items.reverse()
+      }
       return items
     },
   },
