@@ -22,24 +22,7 @@ with open(os.path.join("data/data.json"), encoding=ENCODING) as file:
   lastUpdate = json_content["lastUpdate"]
   print("更新日時: "+lastUpdate+"\n")
 
-msg = str(os.environ['MSG'])
-msgJson = json.loads(msg)
-commitMsg = msgJson[len(msgJson)-1]["message"].splitlines()
-print("Commit Message:\n----------")
-print(msg)
-print("----------\n")
-
-updContent = ""
-for i in range(len(commitMsg)):
-  if i<1: continue
-  txt = commitMsg[i]
-  updContent += txt
-  updContent += "\n"
-
-print("LAST COMMIT MESSAGE")
-print(updContent)
-
-status="#茨城県 版 #新型コロナウイルス 対策サイトを更新しました。\n{}更新\n\n{}\n#いばらきアマビエちゃん #コロナに負けるな #ワンチーム茨城\nhttps://ibaraki.stopcovid19.jp/".format(lastUpdate, updContent)
+status="#茨城県 版 #新型コロナウイルス 対策サイトを更新しました。\n{}更新\nhttps://ibaraki.stopcovid19.jp/".format(lastUpdate)
 
 print("TWEET MESSAGE\n----------\n"+status+"\n----------")
 
